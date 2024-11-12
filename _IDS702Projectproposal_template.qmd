@@ -1,0 +1,228 @@
+---
+title: "Project Proposal"
+author: "ALL group member names here"
+subtitle: "Due November 17 at 11:59pm"
+format: pdf
+---
+
+#### Load Packages
+
+```{r load-packages, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+
+rm(list = ls())
+```
+
+#add dataset 1 HERE
+
+\newpage
+# Dataset 2
+
+**Data source:**
+
+https://catalog.data.gov/dataset/crime-data-from-2020-to-present
+
+**Brief description:**
+
+This data set reflects incidents of crime in the City of Los Angeles dating from 2020 to 2023. This data is transcribed from original crime reports that are typed on paper and therefore there may be some inaccuracies within the data.
+
+This code book describes the data in more depth: https://data.lacity.org/Public-Safety/Crime-Data-from-2020-to-Present/2nrs-mtv8/about_data
+
+**Long description**
+
+The City of Los Angeles provides a crime dataset from 2020 to the 2023, covering incidents reported to the Los Angeles Police Department (LAPD). Here’s a breakdown of key columns in the dataset:
+
+1\. DR_NO: Unique identifier assigned to each crime report, used to track individual cases.
+
+2\. Date Rptd: Date the incident was officially reported to the police.
+
+3\. DATE OCC: Date when the crime actually occurred.
+
+4\. TIME OCC: Time the incident occurred, which allows for time-of-day analysis.
+
+5\. AREA: Code representing the geographical area of Los Angeles where the incident took place.
+
+6\. AREA NAME: Name of the area corresponding to the AREA code, providing a more human-readable location.
+
+7\. Rpt Dist No: Reporting district number within the LAPD, which is a more specific geographical indicator within the area.
+
+8\. Part 1-2: Crime classification indicator distinguishing between Part 1 and Part 2 crimes, which helps in crime severity categorization.
+
+9\. Crm Cd: Crime code representing a specific type of crime.
+
+10\. Crm Cd Desc: Description of the crime type (e.g., robbery, assault), giving context to the "Crm Cd" column.
+
+11\. Mocodes: Modus operandi codes that describe the method or behavior pattern of the suspect.
+
+12\. Vict Age: Age of the victim, which can be used for demographic analysis.
+
+13\. Vict Sex: Gender of the victim, another demographic detail.
+
+14\. Vict Descent: Ethnic background or descent of the victim.
+
+15\. Premis Cd: Premise code indicating the type of location where the crime occurred.
+
+16\. Premis Desc: Description of the premise (e.g., street, residence), helping to understand crime locations.
+
+17\. Weapon Used Cd: Code indicating if a weapon was used in the crime, which can be used to assess weapon involvement trends.
+
+18\. Weapon Desc: Description of the weapon, if applicable, providing details on the weapon type.
+
+19\. Status: Code indicating the current status of the case (e.g., open, closed).
+
+20\. Status Desc: Description of the case status, complementing the "Status" code with a text explanation.
+
+21\. Crm Cd 1-4: Additional crime codes, capturing cases where multiple types of crimes were involved in a single incident. 22. LOCATION: General location description of the crime.
+
+23\. Cross Street: Cross street information for more precise location data. 24. LAT: Latitude coordinate of the crime location, useful for mapping. 25. LON: Longitude coordinate of the crime location, also useful for mapping.
+
+This dataset allows for comprehensive analysis of crime trends in Los Angeles, with potential insights into crime types, locations, times, demographics of victims, weapon involvement, and case status. The dataset is valuable for identifying patterns, conducting demographic analysis, and mapping geographical hotspots of crime.
+
+**Research question 1:**
+
+**Research Question:** What is the relationship between the severity of reported crimes and their spatiotemporal distribution in L.A? More specifically how do the frequencies of Part 1 and Part 2 violent crimes vary across different geographical areas of Los Angeles and the time of the day between 2020 and 2023?
+
+**Outcome Variable:** *Part 1-2* (binary variable indicating crime seriousness, with Part 1 crimes generally more serious than Part 2).
+
+**Predictor Variables:** *LAT* and *LON* (location coordinates), *AREA* (area code), and *TIME OCC* (time of day). Maybe others too.
+
+**Inference Goal:** This question seeks to determine if more serious crimes are more prevalent in certain areas and at specific times.
+
+**Research question 2:**
+
+**Research Question:** How do victim demographics (age, sex, descent) influence the likelihood of being involved in the most common crimes—vehicle theft, simple assault (battery), burglary from vehicle, theft of identity, and felony vandalism—in Los Angeles between 2020 and 2023, and how do these patterns vary across different geographical areas?
+
+**Outcome Variable Name:** `Crm.Cd.Desc` (Crime Code Description)\
+**Type:** Categorical Variable (Nominal)\
+**Description:**\
+The outcome variable for this research question is the **type of crime committed**, specifically focusing on the top five most common crimes in Los Angeles between 2020 and 2023. These crimes are:
+
+1.  **Vehicle - Stolen**
+
+2.  **Battery - Simple Assault**
+
+3.  **Burglary From Vehicle**
+
+4.  **Theft of Identity**
+
+5.  **Vandalism - Felony (\$400 & Over, All Church Vandalisms)**
+
+This variable represents the specific crime associated with each incident report in the dataset. It is a nominal categorical variable because the categories (crime types) are names without an inherent order or ranking.
+
+**Predictor Variables:** - Vict.Age - Vict.Sex - Vict.Descent - AREA.NAME
+
+**Inference Goal:** This question aims to analyze the relationship between victim demographics and the likelihood of being involved in the five most common crimes in Los Angeles. It also seeks to investigate how these patterns differ across various geographical areas within the city. By focusing on these specific crimes and demographic factors, we can identify potential vulnerabilities and trends in victimization across different population groups and locations.
+
+\newpage
+
+**Load the data and provide a `glimpse()`**:
+
+```{r data-2, warning=FALSE}
+
+data <- read.csv("~/r\ stuff/Stats_final/Stats_Final_Project/Crime_Data_from_2020_to_Present.csv")
+
+
+glimpse(data)
+```
+
+**Exploratory Plots:** ***Research question 1 plots:***
+
+```{r plot-2_1, echo=FALSE, size= 10 }
+library(ggplot2)
+
+# Assuming 'data' is your dataframe and '' is your binary variable
+ggplot(data, aes(x = factor(Part.1.2))) +
+  geom_bar(fill = "steelblue") +
+  labs(x = "Crime type", y = "Count",title = "Dist of Part 1(serious crimes) & Part 2(less serious crimes)") +
+  theme_minimal() +
+  scale_x_discrete(labels = c("1" = "serious crimes", "2" = "less serious crimes"))
+```
+
+
+
+```{r plot-2_2, echo=FALSE }
+
+
+# Create the crime area summary and recode the Part.1.2 values
+crime_area_summary <- data %>%
+  mutate(Part.1.2 = as.character(Part.1.2)) %>%  # Convert to character first
+  mutate(Part.1.2 = fct_recode(Part.1.2,
+    "Part 1 (serious crimes)" = "1",
+    "Part 2 (less serious crimes)" = "2"
+  )) %>%
+  group_by(AREA.NAME, Part.1.2) %>%
+  summarise(Frequency = n(), .groups = "drop")
+
+# Create the heatmap with updated labels
+ggplot(crime_area_summary, aes(x = Part.1.2, y = AREA.NAME, fill = Frequency)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "white", high = "red") +
+  labs(title = "Frequency of Crimes by Area and Severity",
+       x = "Crime Severity",
+       y = "Area Name",
+       fill = "Frequency") +
+  theme_minimal() 
+
+```
+\newpage
+***Research question 2 plots:***
+
+
+```{r plot-2_3, echo=FALSE }
+# Filter for the top five crimes
+top_crimes <- c("VEHICLE - STOLEN", "BATTERY - SIMPLE ASSAULT",
+                "BURGLARY FROM VEHICLE", "THEFT OF IDENTITY",
+                "VANDALISM - FELONY ($400 & OVER, ALL CHURCH VANDALISMS)")
+filtered_data <- data %>%
+  filter(Crm.Cd.Desc %in% top_crimes)
+# 1. Summary of the outcome variable
+part_1_2_summary <- table(data$Part.1.2)
+
+# Assuming 'data' is your dataframe and '' is your binary variable
+ggplot(filtered_data, aes(x = factor(Crm.Cd.Desc))) +
+  geom_bar(fill = "steelblue") +
+  labs(x = "Crime Name", y = "Count",title = "Distribution of Top Five Crimes") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 15))
+```
+
+```{r plot-2_4,fig.width=8, fig.height=7, echo=FALSE}
+# Aggregate the data
+crime_area_summary <- filtered_data %>%
+  group_by(AREA.NAME, Crm.Cd.Desc) %>%
+  summarise(Frequency = n())
+
+# Create the heatmap with improved x-axis labels
+ggplot(crime_area_summary, aes(x = Crm.Cd.Desc, y = AREA.NAME, fill = Frequency)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "white", high = "red") +
+  labs(title = "Frequency of Top 5 Crimes by Area",
+       x = "Crime Type",
+       y = "Area Name",
+       fill = "Frequency") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 15))
+
+
+```
+```{r plot-2_5 ,fig.width=11,fig.height=5 , echo=FALSE }
+# Filter for valid Vict Age and the top five crimes
+filtered_data <- filtered_data %>%
+  mutate(Vict.Age = as.numeric(Vict.Age)) %>%
+  filter(!is.na(Vict.Age) & Vict.Age > 0 & Vict.Age < 120, Vict.Sex %in% c('M', 'F'))
+
+# Create the plot
+ggplot(filtered_data, aes(x = Vict.Age, fill = Vict.Sex)) +
+  geom_histogram(binwidth = 5, alpha = 0.7, position = "identity") +
+  facet_grid(Vict.Sex ~ Crm.Cd.Desc) +
+  labs(title = "Age Distribution of Victims by Crime Type and Sex",
+       x = "Victim Age",
+       y = "Number of Victims",
+       fill = "Victim Sex") +
+  theme_minimal()
+
+```
