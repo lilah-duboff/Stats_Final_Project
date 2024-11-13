@@ -129,6 +129,7 @@ glimpse(data)
 
 **Exploratory Plots:** ***Research question 1 plots:***
 
+
 ```{r plot-2_1, echo=FALSE, size= 10 }
 library(ggplot2)
 
@@ -140,7 +141,10 @@ ggplot(data, aes(x = factor(Part.1.2))) +
   scale_x_discrete(labels = c("1" = "serious crimes", "2" = "less serious crimes"))
 ```
 
-
+Distribution of Part 1 (Serious Crimes) & Part 2 (Less Serious Crimes)
+This bar chart categorizes crimes into Part 1 (serious crimes) and Part 2 (less serious crimes) and shows the frequency of each category. The two bars illustrate the relative proportions of serious versus less serious crimes, providing insight into the overall severity distribution within the dataset.
+EDA Insights:
+Part 1 crimes have a higher frequency than Part 2 crimes, indicating that serious crimes make up a larger portion of the reported incidents. The more severe crimes have about 591,254 observations and less severe crimes are 399,039. This distribution helps understand the nature of crime severity in Los Angeles, which may influence policing or resource allocation.
 
 ```{r plot-2_2, echo=FALSE }
 
@@ -166,9 +170,12 @@ ggplot(crime_area_summary, aes(x = Part.1.2, y = AREA.NAME, fill = Frequency)) +
   theme_minimal() 
 
 ```
+Frequency of Crime Severity( more severe and less severe)
+Description: This heatmap shows the frequency of the top five crimes across various geographical areas. Each cell's color intensity represents the count of a particular crime type within an area, with darker shades indicating higher frequencies. The y-axis lists the areas, while the x-axis lists the severity of crime( binary: less severe and more severe), allowing for a spatial view of crime distribution.
+EDA Insights:
+Areas with darker cells have higher crime counts, highlighting regions with potentially higher crime rates for each type. Certain areas like "Pacific", "Central","77 Street", etc. have a consistently high frequency for more severe crimes, indicating general high-crime zones. Areas with high frequencies for severity of the crime could benefit from targeted crime prevention programs or policing strategies.
 \newpage
 ***Research question 2 plots:***
-
 
 ```{r plot-2_3, echo=FALSE }
 # Filter for the top five crimes
@@ -188,6 +195,11 @@ ggplot(filtered_data, aes(x = factor(Crm.Cd.Desc))) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
   scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 15))
 ```
+
+Distribution of Top Five Crimes
+Description: This bar chart shows the frequency of the top five most common crimes in Los Angeles. Each bar represents a specific crime type, with the height indicating the total count of occurrences. This visualization provides an overview of the relative prevalence of each crime, helping to identify which types are most frequent in the dataset.
+EDA Insights:
+The chart clearly shows that "Vehicle - Stolen" has the highest frequency among the top five crimes, followed closely by "Battery - Simple Assault." This distribution allows for quick comparison across crime types, highlighting which crimes are more common. Observing high counts for specific crimes could indicate priority areas for law enforcement or community awareness programs.
 
 ```{r plot-2_4,fig.width=8, fig.height=7, echo=FALSE}
 # Aggregate the data
@@ -209,6 +221,10 @@ ggplot(crime_area_summary, aes(x = Crm.Cd.Desc, y = AREA.NAME, fill = Frequency)
 
 
 ```
+Frequency of Top 5 Crimes by Area
+Description: This heatmap shows the frequency of the top five crimes across various geographical areas. Each cell's color intensity represents the count of a particular crime type within an area, with darker shades indicating higher frequencies. The y-axis lists the areas, while the x-axis lists the crime types, allowing for a spatial view of crime distribution.
+EDA Insights:
+Areas with darker cells have higher crime counts, highlighting regions with potentially higher crime rates for each type. Certain areas like "Pacific", "Central","77 Street", etc. have a consistently high frequency for crime types like "Vandalism" and "Central" area has highest " Burglary from Vehicle" crime type cases. Areas with high frequencies for specific crime types could benefit from targeted crime prevention programs or policing strategies.
 ```{r plot-2_5 ,fig.width=11,fig.height=5 , echo=FALSE }
 # Filter for valid Vict Age and the top five crimes
 filtered_data <- filtered_data %>%
@@ -226,3 +242,8 @@ ggplot(filtered_data, aes(x = Vict.Age, fill = Vict.Sex)) +
   theme_minimal()
 
 ```
+Age Distribution of Victims by Crime Type and Sex
+Description: This faceted plot shows the age distribution of victims across different crime types, separated by victim sex (female and male). Each facet represents a unique combination of crime type and sex, with the x-axis showing victim age and the y-axis showing the count. This plot reveals age-based patterns in victimization for each crime type, broken down by gender.
+EDA Insights:
+Certain age groups may have higher victimization rates for specific crimes, suggesting patterns of vulnerability related to age. Comparing male and female distributions within each crime type can reveal gender-based differences in victimization, potentially indicating targeted or biased victimization. There is a noticeably higher count of female victims across multiple crime types, particularly in simple assault and identity theft. Male victim counts are generally lower than females for most crimes; however, certain crimes, such as vehicle theft and burglary from vehicles, show a more balanced distribution between genders. This could suggest that these crime types are less influenced by the victim's gender. Across most crimes, young adults appear to have the highest victimization rates, particularly visible in crimes like simple assault and identity theft. This age group might be more exposed to environments or activities associated with these crimes.
+Different crimes show unique distributions by age and gender, which can guide more focused safety or awareness campaigns for specific demographic groups.
