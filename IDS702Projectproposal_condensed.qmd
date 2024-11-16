@@ -1,0 +1,602 @@
+---
+title: "Project Proposal"
+author: "Nathan Bush, Lilah DuBoff, Syed Huma Shah, and Atreya Tadepalli"
+subtitle: "Due November 17 at 11:59pm"
+format: pdf
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+#### Load Packages
+
+```{r load-packages, message = FALSE, warning = FALSE}
+options(repos = c(CRAN = "https://cran.rstudio.com"))
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+install.packages("corrplot")
+library(corrplot)
+
+
+rm(list = ls())
+```
+
+# Dataset 1
+
+**Data source:** Mendeley
+Data, [https://data.mendeley.com/datasets/wj9rwkp9c2/1](https://www.google.com/url?q=https%3A%2F%2Fdata.mendeley.com%2Fdatasets%2Fwj9rwkp9c2%2F1)
+
+**Brief description:** The data were collected from an Iraqi laboratory
+within the Medical City Hospital, the Specialized Center for
+Endocrinology, and the Diabetes-Al-Kindy Teaching Hospital. The dataset
+is composed of patient files, inlcuding medical information, laboratory
+analysis, and diagnoses.
+
+**Long description:** This dataset contains information about
+individuals who are classified as not having diabetes, are prediabetic,
+or have been diagnosed with diabetes. Variables include:
+
+1.  Patient ID
+2.  Blood Sugar Level
+3.  Age
+4.  Gender
+5.  Creatinine ratio(Cr)
+6.  Body Mass Index (BMI)
+7.  Urea
+8.  Cholesterol (Chol)
+9.  Fasting lipid profile including total, LDL, VLDL, Triglycerides(TG)
+    and HDL Cholesterol
+10. HBA1C
+11. Class (the patient's diabetes disease class may be Diabetic,
+    Non-Diabetic, or Pre-Diabetic).
+
+The dataset allows for an investigation into the factors that contribute
+to the risk of developing diabetes, and provides an opportunity to
+uncover patterns and relationships that could inform both clinical
+practice and public health interventions. The variables can be
+classified into three types: biochemical markers (blood sugar, urea,
+creatinine), lipid profiles, and HbA1c levels. Together, these variables
+are essential for understanding the metabolic profile of individuals
+across different diabetes classifications. The age and gender categories
+can help to identify the most-at risk groups.
+
+\newpage
+
+**Research question 1:** To what extent do demographic factors, such as
+age and gender, influence a patient’s likelihood of being classified as
+diabetic, pre-diabetic, or non-diabetic? Additionally, how do these
+demographic characteristics interact with other clinical variables, such
+as BMI, blood sugar levels, or lipid profiles, in determining diabetes
+risk and progression?
+
+**Outcome Variable:** CLASS (Diabetes status of patient)
+
+**Type:** Ordinal Categorical Variable
+
+**Predictor Variables:** Age, Gender, potentially other interaction
+variables
+
+**Inference Goal:** This question seeks to determine if either age or
+gender are statistically significant variables when predicting the
+diabetes class of a patient, and if age interacting with other clinical
+variables has an impact on classification.
+
+**Research question 2:** Do health information statistics like blood
+sugar level, cholesterol, or lipids profiles have an impact on whether a
+patient is classified as diabetic, pre-diabetic, or non-diabetic?
+
+**Outcome Variable Name:** *CLASS* (Diabetes status of patient)
+
+**Type:** Ordinal Categorical Variable
+
+**Predictor Variables:**
+
+*Urea* - Urea amount (Continuous, mmol/L)
+
+*Chol* - Cholesterol measurement (Continuous, mg/dL)
+
+*BMI* - Body Mass Index (Continuous)
+
+*HBA1C* - Hemoglobin A1C; long-term blood sugar levels (Continuous, %)
+
+*Cr* - Creatinine ratio (Continuous, mg/g)
+
+*TG* - Triglycerides (Continuous, mg/dL)
+
+*HDL* - High-density Lipoprotein Cholesterol (Continuous, mg/dL)
+
+*VLDL* - Very Low-density Lipoprotein Cholesterol (Continuous, mg/dL)
+
+*LDL* - Low-density Lipoprotein Cholesterol (Continuous, mg/dL)
+
+**Description:** This question seeks to determine if the diabetes class
+of a patient can be accurately predicted using the health indicators
+available\
+
+\newpage
+
+***Research Question 1 EDA and Plots***
+
+```{r}
+diabetes_df <- read.csv("https://raw.githubusercontent.com/lilah-duboff/Stats_Final_Project/refs/heads/main/Dataset%20of%20Diabetes%20.csv")
+
+glimpse(diabetes_df)
+```
+
+```{r}
+diabetes_df |> count(CLASS)
+diabetes_df |> count(Gender)
+```
+
+As we can see from these counts tables, there are a few issues with how
+the data was input into the dataset. Notably, there are duplicate labels
+for how the diabetes classification was input - this is likely due to
+white-space, so in the next chunk, we've removed it, and checked the
+table counts again. In the gender table, there is one entry where a
+female patient was denoted with a lowercase f, instead of a capital F.
+We have changed this as well.
+
+```{r}
+# Remove extra spaces and standardize to uppercase
+diabetes_df$CLASS <- toupper(trimws(diabetes_df$CLASS))
+diabetes_df$Gender[diabetes_df$Gender == "f"] <- "F"
+
+diabetes_df |> count(CLASS)
+diabetes_df |> count(Gender)
+```
+
+We checked the counts again, and all seems to be consistent!
+
+\newpage
+
+***Demographics Plots***
+
+```{r}
+ggplot(diabetes_df, aes(x = CLASS)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  labs(
+    title = "Counts of Diabetes Diagnoses",
+    x = "Category",
+    y = "Count") 
+```
+
+This bar graph shows the counts of patients who were identified as
+either non-diabetic (N), Pre-Diabetic (P), or Diabetic (Y). We can see
+that the vast majority of patients in the dataset were classified as
+diabetic, which could potentially influence analysis.
+
+\newpage
+
+```{r}
+ggplot(data = diabetes_df, aes(x = CLASS, y = AGE, fill = CLASS)) + 
+  geom_boxplot() +
+  ggtitle("Age and Diabetes Class") +
+  theme_minimal() + 
+  scale_fill_manual(values = c("Y" = "red", "P" = "yellow", "N" = "green"))
+
+
+ggplot(data = diabetes_df, aes(x = CLASS, y = BMI, fill = CLASS)) + 
+  geom_boxplot() +
+  ggtitle("BMI and Diabetes Class") +
+  theme_minimal() + 
+  scale_fill_manual(values = c("Y" = "red", "P" = "yellow", "N" = "green"))
+```
+
+The first box plot illustrates the relationship between age and diabetes
+class (Y = Yes, P = Pre-diabetes, N = No). We can see that the median
+age increases progressively from the "No" (N) category to the
+"Pre-diabetes" (P) and then to the "Diabetes" (Y) category. This trend
+suggests that individuals with a diabetes diagnosis tend to be older on
+average compared to those without diabetes or in the pre-diabetes
+category. The distribution in the "Y" - or "Diabetes" - class shows a
+wider range of ages, indicating more variability in the ages of people
+diagnosed with diabetes.
+
+The second box plot shows the distribution of Body Mass Index (BMI)
+across the same diabetes categories. Here, we see a similar trend where
+the median BMI increases from the "No" (N) to "Pre-diabetes" (P) and
+then to the "Diabetes" (Y) category. Individuals with diabetes (Y) have
+a notably higher median BMI compared to those in the pre-diabetes or
+non-diabetes groups. The wider spread in the "Diabetes" category
+suggests that BMI varies more among individuals with diabetes,
+highlighting the potential link between obesity and the progression to
+diabetes.
+
+\newpage
+
+***Clinical Measures Plots***
+
+```{r}
+ggplot(data = diabetes_df, aes(x = CLASS, y = HbA1c, fill = CLASS)) +
+  geom_boxplot() +
+  ggtitle("Blood Sugar Level and Diabetes Class") +
+  theme_minimal() + 
+  scale_fill_manual(values = c("Y" = "red", "P" = "yellow", "N" = "green"))
+
+
+ggplot(data = diabetes_df, aes(x = CLASS, y = Chol, fill = CLASS)) +
+  geom_boxplot() +
+  ggtitle("Cholesterol and Diabetes Class") +
+  theme_minimal() + 
+  scale_fill_manual(values = c("Y" = "red", "P" = "yellow", "N" = "green"))
+
+```
+
+The first box plot shows the relationship between blood sugar levels
+(HbA1c) and diabetes class. It is evident that there is a dramatic
+difference in median HbA1c levels from the increases from the
+"Non-Diabetic" (N) category to the "Diabetes" (Y) category. This is
+expected, as medical knowledge states that individuals with higher blood
+sugar levels are more likely to be at risk for pre-diabetes or diabetes.
+The data indicates that blood sugar levels are higher and more variable
+among those diagnosed with diabetes.
+
+In contrast, the second box plot shows the distribution of cholesterol
+levels across the same diabetes categories. Here, we do not observe a
+clear trend in cholesterol levels between the "No" (N), "Pre-diabetes"
+(P), and "Diabetes" (Y) groups. The median cholesterol levels remain
+relatively stable across all categories, with no significant increase as
+the diabetes class changes. This suggests that cholesterol may not be as
+closely related to the classification of diabetes as blood sugar levels
+(HbA1c), or that its role in diabetes risk may be more complex or
+influenced by other factors.
+
+\newpage
+
+EDA Inquiry for Research Question 2: How correlated are the predictor
+variables (ex. blood sugar level, cholesterol) that may be utilized to
+predict the diabetes class of a patient?
+
+-   This may serve to better understand the multicollinearity included
+    within the model, and how to remove variables to strengthen the
+    statistical interpretation of the remaining predictor variables
+    included within the model.
+
+```{r}
+df_corr=cor(diabetes_df[sapply(diabetes_df,is.numeric)])
+corrplot(df_corr)
+```
+
+From this correlation matrix of the numerical predictor variables, it
+appears that there will not be major issues of multicollinearity when
+preparing the model. The strongest correlation appears to be between age
+and BMI, or Urea and Creatinine level. One of either of these variables
+may be excluded from the regression, depending on testing.
+
+\newpage
+
+# Dataset 2
+
+**Data source:**
+
+https://catalog.data.gov/dataset/crime-data-from-2020-to-present
+
+**Brief description:**
+
+This data set reflects incidents of crime in the City of Los Angeles
+dating from 2020 to 2023. This data is transcribed from original crime
+reports that are typed on paper and therefore there may be some
+inaccuracies within the data.
+
+This code book describes the data in more depth:
+https://data.lacity.org/Public-Safety/Crime-Data-from-2020-to-Present/2nrs-mtv8/about_data
+
+**Long description**
+
+The City of Los Angeles provides a crime dataset from 2020 to the 2023,
+covering incidents reported to the Los Angeles Police Department (LAPD).
+Here’s a breakdown of key columns in the dataset:
+
+1\. DR_NO: Unique identifier assigned to each crime report, used to
+track individual cases.
+
+2\. Date Rptd: Date the incident was officially reported to the police.
+
+3\. DATE OCC: Date when the crime actually occurred.
+
+4\. TIME OCC: Time the incident occurred, which allows for time-of-day
+analysis.
+
+5\. AREA: Code representing the geographical area of Los Angeles where
+the incident took place.
+
+6\. AREA NAME: Name of the area corresponding to the AREA code,
+providing a more human-readable location.
+
+7\. Rpt Dist No: Reporting district number within the LAPD, which is a
+more specific geographical indicator within the area.
+
+8\. Part 1-2: Crime classification indicator distinguishing between Part
+1 and Part 2 crimes, which helps in crime severity categorization.
+
+9\. Crm Cd: Crime code representing a specific type of crime.
+
+10\. Crm Cd Desc: Description of the crime type (e.g., robbery,
+assault), giving context to the "Crm Cd" column.
+
+11\. Mocodes: Modus operandi codes that describe the method or behavior
+pattern of the suspect.
+
+12\. Vict Age: Age of the victim, which can be used for demographic
+analysis.
+
+13\. Vict Sex: Gender of the victim, another demographic detail.
+
+14\. Vict Descent: Ethnic background or descent of the victim.
+
+15\. Premis Cd: Premise code indicating the type of location where the
+crime occurred.
+
+16\. Premis Desc: Description of the premise (e.g., street, residence),
+helping to understand crime locations.
+
+17\. Weapon Used Cd: Code indicating if a weapon was used in the crime,
+which can be used to assess weapon involvement trends.
+
+18\. Weapon Desc: Description of the weapon, if applicable, providing
+details on the weapon type.
+
+19\. Status: Code indicating the current status of the case (e.g., open,
+closed).
+
+20\. Status Desc: Description of the case status, complementing the
+"Status" code with a text explanation.
+
+21\. Crm Cd 1-4: Additional crime codes, capturing cases where multiple
+types of crimes were involved in a single incident. 22. LOCATION:
+General location description of the crime.
+
+23\. Cross Street: Cross street information for more precise location
+data. 24. LAT: Latitude coordinate of the crime location, useful for
+mapping. 25. LON: Longitude coordinate of the crime location, also
+useful for mapping.
+
+This dataset allows for comprehensive analysis of crime trends in Los
+Angeles, with potential insights into crime types, locations, times,
+demographics of victims, weapon involvement, and case status. The
+dataset is valuable for identifying patterns, conducting demographic
+analysis, and mapping geographical hotspots of crime.
+
+**Research question 1:**
+
+**Research Question:** What is the relationship between the severity of
+reported crimes and their spatiotemporal distribution in L.A? More
+specifically how do the frequencies of Part 1 and Part 2 violent crimes
+vary across different geographical areas of Los Angeles and the time of
+the day between 2020 and 2023?
+
+**Outcome Variable:** *Part 1-2* (binary variable indicating crime
+seriousness, with Part 1 crimes generally more serious than Part 2).
+
+**Predictor Variables:** *LAT* and *LON* (location coordinates), *AREA*
+(area code), and *TIME OCC* (time of day). Maybe others too.
+
+**Inference Goal:** This question seeks to determine if more serious
+crimes are more prevalent in certain areas and at specific times.
+
+**Research question 2:**
+
+**Research Question:** How do victim demographics (age, sex, descent)
+influence the likelihood of being involved in the most common
+crimes—vehicle theft, simple assault (battery), burglary from vehicle,
+theft of identity, and felony vandalism—in Los Angeles between 2020 and
+2023, and how do these patterns vary across different geographical
+areas?
+
+**Outcome Variable Name:** `Crm.Cd.Desc` (Crime Code Description)\
+**Type:** Categorical Variable (Nominal)\
+**Description:**\
+The outcome variable for this research question is the **type of crime
+committed**, specifically focusing on the top five most common crimes in
+Los Angeles between 2020 and 2023. These crimes are:
+
+1.  **Vehicle - Stolen**
+
+2.  **Battery - Simple Assault**
+
+3.  **Burglary From Vehicle**
+
+4.  **Theft of Identity**
+
+5.  **Vandalism - Felony (\$400 & Over, All Church Vandalisms)**
+
+This variable represents the specific crime associated with each
+incident report in the dataset. It is a nominal categorical variable
+because the categories (crime types) are names without an inherent order
+or ranking.
+
+**Predictor Variables:** - Vict.Age - Vict.Sex - Vict.Descent -
+AREA.NAME
+
+**Inference Goal:** This question aims to analyze the relationship
+between victim demographics and the likelihood of being involved in the
+five most common crimes in Los Angeles. It also seeks to investigate how
+these patterns differ across various geographical areas within the city.
+By focusing on these specific crimes and demographic factors, we can
+identify potential vulnerabilities and trends in victimization across
+different population groups and locations.
+
+\newpage
+
+**Load the data and provide a `glimpse()`**:
+
+```{r data-2, warning=FALSE}
+
+data <- read.csv("https://github.com/lilah-duboff/Stats_Final_Project/raw/refs/heads/main/Crime_Data_from_2020_to_Present.csv?download=")
+
+glimpse(data)
+```
+
+**Exploratory Plots:** ***Research question 1 plots:***
+
+```{r plot-2_1, echo=FALSE, size= 10 }
+library(ggplot2)
+
+# Assuming 'data' is your dataframe and '' is your binary variable
+ggplot(data, aes(x = factor(Part.1.2))) +
+  geom_bar(fill = "steelblue") +
+  labs(x = "Crime type", y = "Count",title = "Dist of Part 1(serious crimes) & Part 2(less serious crimes)") +
+  theme_minimal() +
+  scale_x_discrete(labels = c("1" = "serious crimes", "2" = "less serious crimes"))
+```
+
+Distribution of Part 1 (Serious Crimes) & Part 2 (Less Serious Crimes)
+This bar chart categorizes crimes into Part 1 (serious crimes) and Part
+2 (less serious crimes) and shows the frequency of each category. The
+two bars illustrate the relative proportions of serious versus less
+serious crimes, providing insight into the overall severity distribution
+within the dataset. EDA Insights: Part 1 crimes have a higher frequency
+than Part 2 crimes, indicating that serious crimes make up a larger
+portion of the reported incidents. The more severe crimes have about
+591,254 observations and less severe crimes are 399,039. This
+distribution helps understand the nature of crime severity in Los
+Angeles, which may influence policing or resource allocation.
+
+```{r plot-2_2, echo=FALSE }
+
+
+# Create the crime area summary and recode the Part.1.2 values
+crime_area_summary <- data %>%
+  mutate(Part.1.2 = as.character(Part.1.2)) %>%  # Convert to character first
+  mutate(Part.1.2 = fct_recode(Part.1.2,
+    "Part 1 (serious crimes)" = "1",
+    "Part 2 (less serious crimes)" = "2"
+  )) %>%
+  group_by(AREA.NAME, Part.1.2) %>%
+  summarise(Frequency = n(), .groups = "drop")
+
+# Create the heatmap with updated labels
+ggplot(crime_area_summary, aes(x = Part.1.2, y = AREA.NAME, fill = Frequency)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "white", high = "red") +
+  labs(title = "Frequency of Crimes by Area and Severity",
+       x = "Crime Severity",
+       y = "Area Name",
+       fill = "Frequency") +
+  theme_minimal() 
+
+```
+
+Frequency of Crime Severity( more severe and less severe) Description:
+This heatmap shows the frequency of the top five crimes across various
+geographical areas. Each cell's color intensity represents the count of
+a particular crime type within an area, with darker shades indicating
+higher frequencies. The y-axis lists the areas, while the x-axis lists
+the severity of crime( binary: less severe and more severe), allowing
+for a spatial view of crime distribution. EDA Insights: Areas with
+darker cells have higher crime counts, highlighting regions with
+potentially higher crime rates for each type. Certain areas like
+"Pacific", "Central","77 Street", etc. have a consistently high
+frequency for more severe crimes, indicating general high-crime zones.
+Areas with high frequencies for severity of the crime could benefit from
+targeted crime prevention programs or policing strategies. \newpage
+***Research question 2 plots:***
+
+```{r plot-2_3, echo=FALSE }
+# Filter for the top five crimes
+top_crimes <- c("VEHICLE - STOLEN", "BATTERY - SIMPLE ASSAULT",
+                "BURGLARY FROM VEHICLE", "THEFT OF IDENTITY",
+                "VANDALISM - FELONY ($400 & OVER, ALL CHURCH VANDALISMS)")
+filtered_data <- data %>%
+  filter(Crm.Cd.Desc %in% top_crimes)
+# 1. Summary of the outcome variable
+part_1_2_summary <- table(data$Part.1.2)
+
+# Assuming 'data' is your dataframe and '' is your binary variable
+ggplot(filtered_data, aes(x = factor(Crm.Cd.Desc))) +
+  geom_bar(fill = "steelblue") +
+  labs(x = "Crime Name", y = "Count",title = "Distribution of Top Five Crimes") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 15))
+```
+
+Distribution of Top Five Crimes Description: This bar chart shows the
+frequency of the top five most common crimes in Los Angeles. Each bar
+represents a specific crime type, with the height indicating the total
+count of occurrences. This visualization provides an overview of the
+relative prevalence of each crime, helping to identify which types are
+most frequent in the dataset. EDA Insights: The chart clearly shows that
+"Vehicle - Stolen" has the highest frequency among the top five crimes,
+followed closely by "Battery - Simple Assault." This distribution allows
+for quick comparison across crime types, highlighting which crimes are
+more common. Observing high counts for specific crimes could indicate
+priority areas for law enforcement or community awareness programs.
+
+```{r plot-2_4,fig.width=8, fig.height=7, echo=FALSE}
+# Aggregate the data
+crime_area_summary <- filtered_data %>%
+  group_by(AREA.NAME, Crm.Cd.Desc) %>%
+  summarise(Frequency = n())
+
+# Create the heatmap with improved x-axis labels
+ggplot(crime_area_summary, aes(x = Crm.Cd.Desc, y = AREA.NAME, fill = Frequency)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "white", high = "red") +
+  labs(title = "Frequency of Top 5 Crimes by Area",
+       x = "Crime Type",
+       y = "Area Name",
+       fill = "Frequency") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 15))
+
+
+```
+
+Frequency of Top 5 Crimes by Area Description: This heatmap shows the
+frequency of the top five crimes across various geographical areas. Each
+cell's color intensity represents the count of a particular crime type
+within an area, with darker shades indicating higher frequencies. The
+y-axis lists the areas, while the x-axis lists the crime types, allowing
+for a spatial view of crime distribution. EDA Insights: Areas with
+darker cells have higher crime counts, highlighting regions with
+potentially higher crime rates for each type. Certain areas like
+"Pacific", "Central","77 Street", etc. have a consistently high
+frequency for crime types like "Vandalism" and "Central" area has
+highest " Burglary from Vehicle" crime type cases. Areas with high
+frequencies for specific crime types could benefit from targeted crime
+prevention programs or policing strategies.
+
+```{r plot-2_5 ,fig.width=11,fig.height=5 , echo=FALSE }
+# Filter for valid Vict Age and the top five crimes
+filtered_data <- filtered_data %>%
+  mutate(Vict.Age = as.numeric(Vict.Age)) %>%
+  filter(!is.na(Vict.Age) & Vict.Age > 0 & Vict.Age < 120, Vict.Sex %in% c('M', 'F'))
+
+# Create the plot
+ggplot(filtered_data, aes(x = Vict.Age, fill = Vict.Sex)) +
+  geom_histogram(binwidth = 5, alpha = 0.7, position = "identity") +
+  facet_grid(Vict.Sex ~ Crm.Cd.Desc) +
+  labs(title = "Age Distribution of Victims by Crime Type and Sex",
+       x = "Victim Age",
+       y = "Number of Victims",
+       fill = "Victim Sex") +
+  theme_minimal()
+
+```
+
+Age Distribution of Victims by Crime Type and Sex Description: This
+faceted plot shows the age distribution of victims across different
+crime types, separated by victim sex (female and male). Each facet
+represents a unique combination of crime type and sex, with the x-axis
+showing victim age and the y-axis showing the count. This plot reveals
+age-based patterns in victimization for each crime type, broken down by
+gender. EDA Insights: Certain age groups may have higher victimization
+rates for specific crimes, suggesting patterns of vulnerability related
+to age. Comparing male and female distributions within each crime type
+can reveal gender-based differences in victimization, potentially
+indicating targeted or biased victimization. There is a noticeably
+higher count of female victims across multiple crime types, particularly
+in simple assault and identity theft. Male victim counts are generally
+lower than females for most crimes; however, certain crimes, such as
+vehicle theft and burglary from vehicles, show a more balanced
+distribution between genders. This could suggest that these crime types
+are less influenced by the victim's gender. Across most crimes, young
+adults appear to have the highest victimization rates, particularly
+visible in crimes like simple assault and identity theft. This age group
+might be more exposed to environments or activities associated with
+these crimes. Different crimes show unique distributions by age and
+gender, which can guide more focused safety or awareness campaigns for
+specific demographic groups.
