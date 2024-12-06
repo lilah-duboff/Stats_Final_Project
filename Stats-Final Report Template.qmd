@@ -1,0 +1,47 @@
+---
+title: "A Statistical Analysis of Crime in Los Angeles"
+author: "Lilah Duboff, Syed Huma Ramin, Nathan Bush, Atreya Tadepalli"
+format: pdf
+header-includes:
+      - \usepackage{float}
+      - \floatplacement{table}{H}
+execute:
+  echo: false
+---
+
+**Add your name in the Author section in the header**
+
+\newpage
+
+## Part 1: Abstract
+
+## Introduction
+
+This report seeks to analyze crime statistics for the city of Los Angeles, and in particular, understand the correlated elements associated with increased crime. By rigorously studying such metrics from a statistical perspective, it may be possible to allocate resources, strategize violence and crime prevention programs, and take action on trends in crime-related incidents. This particular study seeks to gather further understanding on factors that may serve to predict the occurrence of violent crimes. Specifically, we have sought to analyze: can the location and time of day impact the likelihood of experiencing a violent crime, as opposed to a non-violent crime? Additionally, can demographic indicators, such as sex or race, impact the likelihood of experiencing one type of violent crime or another? We utilize statistics provided by the Los Angeles Police Department from the years 2020 - 2023, with over [  ] crime records, to conduct our analysis.
+```{r, message=FALSE}
+library(tidyverse)
+library(MASS)
+library(caret)
+library(nnet)
+## you may need to add the relevant packages here
+```
+
+### Data Overview
+
+### Analysis Plan
+
+### Model Results
+
+### Model Assessment
+
+\newpage
+
+## Part 2: Executive Summary
+
+### Introduction
+
+### Methods
+
+### Results
+
+### Conclusion
