@@ -1,5 +1,5 @@
 ---
-title: "A Statistical Analysis of Crime in Los Angeles"
+title: "Exploring Indicators of Increased Crime in Los Angeles"
 author: "Lilah Duboff, Syed Huma Ramin, Nathan Bush, Atreya Tadepalli"
 format: pdf
 header-includes:
@@ -11,26 +11,249 @@ execute:
 
 **Add your name in the Author section in the header**
 
+```{r data-2, warning=FALSE}
+library(knitr)
+library(tidyverse)
+library(MASS)
+library(caret)
+library(nnet)
+library(Hmisc)
+library(gridExtra)
+library(broom)
+library(janitor)
+library(data.table)
+
+file_path <-"C:/Users/atrey/Downloads/Crime_Data_from_2020_to_Present (1).csv"
+        
+data <- read.csv(file_path)
+```
+
 \newpage
+
+```{r}
+library(dplyr)
+crime_subset <- subset(data, select=c("TIME.OCC", "AREA", "AREA.NAME", "Part.1.2", "Crm.Cd.Desc", "Vict.Age", "Vict.Sex", "Vict.Descent"))
+```
+
+```{r}
+#chheck out and remove missing values
+
+missing_values <- colSums(is.na(crime_subset))
+
+#kable(missing_values, caption = "Count of Missing Values by #Column")
+
+crime_subset[crime_subset == ""] <- NA
+crime_subset <- na.omit(crime_subset)
+```
+
+```{r}
+#creating factor variables for age and crime
+
+library(dplyr)
+
+crime_subset <- crime_subset %>%
+  filter(Vict.Age != 0)
+
+crime_subset <- crime_subset %>%
+  filter(Crm.Cd.Desc %in% c(
+    "VEHICLE - STOLEN",
+    "BATTERY - SIMPLE ASSAULT",
+    "BURGLARY FROM VEHICLE",
+    "THEFT OF IDENTITY",
+    "VANDALISM - FELONY ($400 & OVER, ALL CHURCH VANDALISMS)"
+  ))
+
+crime_subset <- crime_subset %>%
+  mutate(Vict.Age = case_when(
+    Vict.Age < 18 ~ "Under 18",
+    Vict.Age >= 18 & Vict.Age <= 24 ~ "18 to 24",
+    Vict.Age >= 25 & Vict.Age <= 34 ~ "25 to 34",
+    Vict.Age >= 35 & Vict.Age <= 44 ~ "35 to 44",
+    Vict.Age >= 45 & Vict.Age <= 54 ~ "45 to 54",
+    Vict.Age >= 55 & Vict.Age <= 64 ~ "55 to 64",
+    Vict.Age >= 65 ~ "65+"
+  ))
+
+crime_subset$Vict.Age <- factor(crime_subset$Vict.Age, levels = c(
+  "Under 18", "18 to 24", "25 to 34", "35 to 44", "45 to 54", "55 to 64", "65+"
+))
+```
+
+```{r}
+crime_subset$Crm.Cd.Desc <- factor(crime_subset$Crm.Cd.Desc, levels = c(
+    "VEHICLE - STOLEN",
+    "BATTERY - SIMPLE ASSAULT",
+    "BURGLARY FROM VEHICLE",
+    "THEFT OF IDENTITY",
+    "VANDALISM - FELONY ($400 & OVER, ALL CHURCH VANDALISMS)"
+    ))
+```
+
+```{r}
+#checks 
+kable(crime_subset$Vict.Sex,caption="Breakdown of Victim Sex")
+kable(crime_subset$Vict.Descent,caption="Breakdown of Victim Descent")
+```
+
+```{r}
+#simplify sex and descent groups
+
+crime_subset <- crime_subset %>%
+  filter(Vict.Sex != "H", Vict.Sex != "", Vict.Sex !="-")
+
+#simplify descent
+crime_subset <- crime_subset %>%
+  mutate(Vict.Descent = case_when(
+    Vict.Descent %in% c("A", "C", "D", "F", "G", "J", "K", "L", "P", "S", "V", "Z") ~ "Asian/South Pacific",
+    Vict.Descent == "B" ~ "Black",
+    Vict.Descent == "H" ~ "Hispanic/Latin/Mexican",
+    Vict.Descent %in% c("I", "U") ~ "American Indian/Alaskan Native/Hawaiian",
+    Vict.Descent == "W" ~ "White",
+    Vict.Descent == "X" ~ "Unknown",
+    Vict.Descent == "O" ~ "Other",
+  ),
+  Vict.Descent.fac = factor(Vict.Descent, levels = c("White", "Unknown",
+                                                     "American Indian/Alaskan Native/Hawaiian", "Other",
+                                                     "Asian/South Pacific", "Hispanic/Latin/Mexican", "Black")))
+
+crime_subset$Vict.Sex<- factor(crime_subset$Vict.Sex, levels = c( "M", 
+  "F", "X"))
+
+table(crime_subset$Vict.Descent)
+
+```
+
+```{r}
+#Need to check the table counts to see if the groups are super unequal
+table(crime_subset$Vict.Sex)
+table(crime_subset$Vict.Descent)
+```
+
+```{r}
+#Once again checking missing values since it is not appearing
+
+crime_subset <- na.omit(crime_subset) 
+table(crime_subset$Crm.Cd.Desc)
+
+
+```
 
 ## Part 1: Abstract
 
 ## Introduction
 
-This report seeks to analyze crime statistics for the city of Los Angeles, and in particular, understand the correlated elements associated with increased crime. By rigorously studying such metrics from a statistical perspective, it may be possible to allocate resources, strategize violence and crime prevention programs, and take action on trends in crime-related incidents. This particular study seeks to gather further understanding on factors that may serve to predict the occurrence of violent crimes. Specifically, we have sought to analyze: can the location and time of day impact the likelihood of experiencing a violent crime, as opposed to a non-violent crime? Additionally, can demographic indicators, such as sex or race, impact the likelihood of experiencing one type of violent crime or another? We utilize statistics provided by the Los Angeles Police Department from the years 2020 - 2023, with over [  ] crime records, to conduct our analysis.
-```{r, message=FALSE}
-library(tidyverse)
-library(MASS)
-library(caret)
-library(nnet)
-## you may need to add the relevant packages here
+Over the last five years, the metropolitan statistical area of Los Angeles has documented over 200,000 crimes on average each year. With just 25,000 police officers combined between the LA County Sheriff's department and the LA County Police Department, the task of responding, handling, or even preventing such a staggering number of crimes poses a tall task. How can police, social workers, or government officials improve prevention and response strategies to ultimately reduce crime, or perhaps mitigate its impact on society? While the question is multi-faceted and has myriad angles and metrics, such as the type of crime, or the number of people impacted, the application of data science and statistics can provide a tremendous assist to effectively allocate resources, design prevention programs, and form community relationships.
+
+In this study, we aim to apply such statistical analysis to investigate and potentially uncover trends for a subset of the many questions related to stemming crime. To conduct this analysis, we utilize a crime records dataset provided by the Los Angeles (LA) County Sheriff Department**\[CHECK\].** One such question researched concerns location and time, and their influence on the likelihood of violent crime in comparison to non-violent crime. Specifically, can a particular location or time of day, or a combination of both, serve as a statistically significant predictor of more intense crimes? Executing and evaluating such an analysis can help potentially revise police officer work schedules, or allocate more resources to neighborhoods with higher likelihoods of violent crimes. Similarly, we seek to understand if the demographic indicators, such as race, age and sex, associated with victims can be used to forecast increased likelihoods of certain types of crimes over others. For instance, might a female victim result in a higher likelihood of a stolen vehicle in comparison to a burglary? Researching this question can help perhaps tailor prevention programs to specific populations or inform strategies to crack down on specific classes of crime. By the conclusion of this study, we aim to develop interpretable models which produce factors which are statistically significant in predicting increased crime likelihood. In the following sections, we will discuss our data, preprocessing, and model design before proceeding to interpret results and share takeaways related to our research questions.
+
+## Methods
+
+### Data
+
+Our source for this analysis, the dataset provided by the LA sheriff department, includes all crimes recorded between January 1, 2020 and November 24, 2024. In total, the dataset approaches one million records, with 986,873 total crimes recorded in this period. Each record includes key details describing the crime, such as the time and location of the crime, the nature of the crime, and the demographic factors associated with the individuals involved. We further elaborate upon each variable included in our models below:
+
+-   Output Variables
+
+    -   Part 1-2 Crime Intensity (Categorical, Ordinal): Part 1 crimes refer to non-violent crimes, such as petty theft, while Part 2 crimes are violent crimes, such as battery.
+
+    -   Crime Code Description (Categorical, Non-Ordinal): This variable offers a description of the type of crime committed. The LAPD features 140 unique codes to classify crime.
+
+-   Predictor Variables:
+
+    -   Time (Numerical): Time is provided using two variables - the date of the crime, as well as the specific time of the crime, provided on a 24-hour basis. For our study, we opt to exclude the date from our analysis, and focus exclusively on the daily time associated with the crime to observe trends.
+
+    -   Location (Categorical): The dataset includes both the address at which the crime occurred, as well as the neighborhood associated with the address. Each neighborhood is assigned one of 21 codes, and we incorporate these codes as categorical variables \[**IS THIS THE RIGHT TERMINOLOGY**?\] as part of our model.
+
+    -   Victim Sex (Categorical): Victims are assigned one of three codes: Male, Female, or Unknown.
+
+    -   Victim Descent: (Categorical): This variable notes the ethnicity of the victim. Each ethnicity is coded by one of 19 coded letters (e.g. B for Black).
+
+    -   Victim Age (Numerical, Discrete): The victim's age is provided here, with values ranging from 0 all the way to 120.
+
+### Preprocessing
+
+####Missing Data
+
+Firstly, as part of preparing the data for statistical analysis, we choose to process the missing data. We notice that time and location do not contain any missing values, while age, sex, and descent display the below percentage of missing values. Given the abundance of data, and since we are not conducting an analysis pertaining to crime trends over time, we choose to omit all records with missing data. In the case of certain variables, such as age, we observe that there is an unequal distribution of missing values: 42% of missing values relate to Stolen Vehicles, while the next highest category, Petty Motor Vehicle Theft, only contains 9% of such missing age values. In each case, beyond type of crime, we do not observe a pattern pertaining to the missing data, so we elect to omit such records, given the abundance of remaining data.
+
+```{r, echo=FALSE}
+values <- c("Missing Age", "Missing Sex", "Missing Descent")
+percentages <- c(26.7, 14.2, 14.2)
+
+# Create the table
+table <- data.frame(
+  Value = values,
+  Percentage = percentages
+)
+table$Percentage <- paste0(table$Percentage, "%")
+
+# Print the table
+print(table)
 ```
+
+####Grouping
+
+To simplify our models and to avoid losing ease of interpretation in our model, we elect to group certain variables. In the case of time, we elect to divide the day into four separate segments: Morning, Day, Evening, and Night. The below table shows the codes assigned to each time.
+
+```{r, echo=FALSE}
+values <- c("Morning", "Day", "Evening","Night")
+percentages <- c("6 AM - 12 PM","12 PM - 6 PM", "6 PM - 12 AM", "12 AM - 6 AM")
+
+# Create the table
+table <- data.frame(
+  Code = values,
+  Time = percentages
+)
+
+# Print the table
+print(table)
+```
+
+Similarly, we group the age figures into categories to simplify our analysis. Each victim is grouped into one of seven categories based on age: Under 18, 18-24, 25-34, 35-44, 45-54, 55-64, and 65+.
+
+Finally, given the presence of 19 codes pertaining to descent, we choose to group ethnicities based on seven categories to simplify analysis. The table
+
+####Analysis Plan
+
+To address our second research question pertaining to the likelihood of committing one crime compared to another, we only include records pertaining to the top 5 crimes committed in order of frequency. This wil
 
 ### Data Overview
 
 ### Analysis Plan
 
-### Model Results
+## Model Results
+
+### Research Question 2 Results
+
+We first display the results of a multinomial model, which can more accurately depict the likelihood associated with one crime over our reference crime.
+
+```{r}
+# Multinomial model
+library(jtools)
+crime_mod_all <- multinom(Crm.Cd.Desc ~ Vict.Age + Vict.Descent + Vict.Sex,
+                          data=crime_subset)
+
+modelsummary(crime_mod_all)
+```
+
+```{r}
+# GLM results may be slightly better
+library(modelsummary)
+
+crime_glm_mod <- glm(Crm.Cd.Desc ~ Vict.Age + Vict.Descent + Vict.Sex,
+                          data=crime_subset, family="binomial")
+
+#summary(crime_glm_mod)
+modelsummary(crime_glm_mod,
+             fmt = fmt_significant(2),
+             shape = term ~ model + statistic,
+             statistic = c("std.error","conf.int","p.value"),
+             exponentiate = TRUE,
+             gof_map=NA)
+
+#coeff(crime_glm_mod)
+#exp(coeff(crime_glm_mod))
+```
 
 ### Model Assessment
 
@@ -45,3 +268,5 @@ library(nnet)
 ### Results
 
 ### Conclusion
+
+While this study may supply helpful indicators, whether demographic, temporal, or geographic, it is important to be mindful of the data used to generate such coefficients. Specifically, it is worth asking: does the reporting rates of crime correlate with the presence of police in a particular area? This is precisely a shortcoming of certain data science methodlogies, where higher crime rates in areas, due to their ability to spot crime, may only lead to increased police patrol in such areas.
